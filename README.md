@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="dashboard/img/logo.png" alt="Oktopus SOC" width="120" />
-</p>
+
 
 <h1 align="center">🐙 Oktopus SOC</h1>
 
@@ -17,6 +15,9 @@
 </p>
 
 ---
+<p align="center">
+  <img src="dashboard/img/Capture d'écran 2026-03-01 034510.png" alt="Oktopus SOC"  />
+</p>
 
 ## Table des matières
 
