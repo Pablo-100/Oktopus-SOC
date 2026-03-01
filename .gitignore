@@ -1,0 +1,6 @@
+echo "soc.db" >> .gitignore
+echo "*.db" >> .gitignore
+echo "__pycache__/" >> .gitignore
+echo "*.pyc" >> .gitignore
+echo "agent_id.txt" >> .gitignore
+echo "blocker.log" >> .gitignore
