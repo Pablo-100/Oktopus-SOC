@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <title>Oktopus — Rise from the deep. Crush every threat</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- JetBrains Mono depuis Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!--  HEADER                                                           -->
+    <!-- ================================================================= -->
+    <header id="header">
+        <div class="header-left">
+            <div class="logo">
+                <img src="img/image.png" alt="Oktopus" class="logo-icon">
+                <h1>Oktopus <span class="accent">Dashboard</span></h1>
+            </div>
+            <span class="subtitle">Rise from the deep. Crush every threat</span>
+        </div>
+        <div class="header-right">
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                <span>LIVE</span>
+            </div>
+            <div id="ws-status" class="ws-status disconnected">
+                <span class="ws-dot"></span>
+                <span id="ws-text">DISCONNECTED</span>
+            </div>
+            <div id="clock" class="clock">--:--:--</div>
+        </div>
+    </header>
+
+    <!-- ================================================================= -->
+    <!--  NAVIGATION TABS                                                  -->
+    <!-- ================================================================= -->
+    <nav id="tabs">
+        <button class="tab active" data-tab="overview">Vue d'ensemble</button>
+        <button class="tab" data-tab="logs">Logs Live</button>
+        <button class="tab" data-tab="alerts">
+            Alertes <span id="alert-badge" class="badge hidden">0</span>
+        </button>
+        <button class="tab" data-tab="ips">
+            🛡️ IPS <span id="ips-badge" class="badge badge-ips hidden">0</span>
+        </button>
+        <button class="tab" data-tab="agents">Agents</button>
+    </nav>
+
+    <!-- ================================================================= -->
+    <!--  TAB: VUE D'ENSEMBLE                                             -->
+    <!-- ================================================================= -->
+    <section id="tab-overview" class="tab-content active">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">&#x1F4CA;</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-total-logs">0</span>
+                    <span class="stat-label">Logs aujourd'hui</span>
+                </div>
+            </div>
+            <div class="stat-card alert-card">
+                <div class="stat-icon">&#x26A0;</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-active-alerts">0</span>
+                    <span class="stat-label">Alertes actives</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">&#x1F4BB;</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-connected-agents">0</span>
+                    <span class="stat-label">Agents connectés</span>
+                </div>
+            </div>
+            <div class="stat-card critical-card">
+                <div class="stat-icon">&#x1F534;</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="stat-critical">0</span>
+                    <span class="stat-label">CRITICAL (1h)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphe Timeline -->
+        <div class="chart-container">
+            <h3>Timeline des événements (24h)</h3>
+            <canvas id="timeline-chart" width="1200" height="300"></canvas>
+        </div>
+
+        <!-- Carte Geo-IP des attaques -->
+        <div class="chart-container geo-map-container">
+            <h3>🌍 Carte Geo-IP — Attaques en temps réel</h3>
+            <div class="geo-map-stats">
+                <span id="geo-total-events">0 événements géolocalisés</span>
+            </div>
+            <canvas id="geo-map-canvas" width="1200" height="350"></canvas>
+        </div>
+
+        <!-- MITRE ATT&CK Distribution -->
+        <div class="chart-container mitre-chart-container">
+            <h3>🛡️ MITRE ATT&CK — Distribution par tactique</h3>
+            <canvas id="mitre-chart-canvas" width="1200" height="420"></canvas>
+        </div>
+
+        <!-- Dernières alertes rapides -->
+        <div class="panel">
+            <h3>Dernières alertes</h3>
+            <div id="recent-alerts-overview" class="alert-list">
+                <p class="empty-msg">Aucune alerte pour le moment</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!--  TAB: LOGS LIVE                                                   -->
+    <!-- ================================================================= -->
+    <section id="tab-logs" class="tab-content">
+        <!-- Filtres -->
+        <div class="filters">
+            <select id="filter-level">
+                <option value="">Tous les niveaux</option>
+                <option value="INFO">INFO</option>
+                <option value="WARNING">WARNING</option>
+                <option value="HIGH">HIGH</option>
+                <option value="CRITICAL">CRITICAL</option>
+            </select>
+            <select id="filter-agent">
+                <option value="">Tous les agents</option>
+            </select>
+            <select id="filter-source">
+                <option value="">Toutes les sources</option>
+            </select>
+            <input type="text" id="filter-search" placeholder="🔍 Rechercher dans tous les champs...">
+            <button id="btn-export-csv" class="btn btn-small btn-export" title="Exporter en CSV">📥 CSV</button>
+            <button id="btn-export-json" class="btn btn-small btn-export" title="Exporter en JSON">📥 JSON</button>
+            <button id="btn-clear-logs" class="btn btn-small">Vider</button>
+            <label class="autoscroll-label">
+                <input type="checkbox" id="auto-scroll" checked> Auto-scroll
+            </label>
+        </div>
+
+        <!-- Table des logs -->
+        <div class="table-container">
+            <table id="logs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Agent</th>
+                        <th>IP</th>
+                        <th>OS</th>
+                        <th>Level</th>
+                        <th>Source</th>
+                        <th>Catégorie</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <span id="logs-count">0 logs affichés</span>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!--  TAB: ALERTES                                                     -->
+    <!-- ================================================================= -->
+    <section id="tab-alerts" class="tab-content">
+        <div class="panel-header">
+            <h3>Alertes de sécurité</h3>
+            <div class="alert-filters">
+                <select id="alert-filter-severity">
+                    <option value="">Toutes les sévérités</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="LOW">LOW</option>
+                </select>
+                <select id="alert-filter-type">
+                    <option value="">Tous les types</option>
+                    <option value="BRUTE_FORCE">BRUTE_FORCE</option>
+                    <option value="PORT_SCAN">PORT_SCAN</option>
+                    <option value="SQL_INJECTION">SQL_INJECTION</option>
+                    <option value="XSS">XSS</option>
+                    <option value="MALWARE">MALWARE</option>
+                    <option value="ANOMALY">ANOMALY</option>
+                    <option value="SUSPICIOUS_CONNECTION">SUSPICIOUS</option>
+                    <option value="COMMAND_INJECTION">CMD_INJECTION</option>
+                    <option value="REVERSE_SHELL">REVERSE_SHELL</option>
+                    <option value="LATERAL_MOVEMENT">LATERAL_MOV</option>
+                    <option value="PERSISTENCE">PERSISTENCE</option>
+                    <option value="PRIVILEGE_ESCALATION">PRIV_ESC</option>
+                    <option value="DATA_EXFILTRATION">DATA_EXFIL</option>
+                    <option value="DDOS">DDOS</option>
+                    <option value="DNS_TUNNELING">DNS_TUNNEL</option>
+                    <option value="C2_BEACON">C2_BEACON</option>
+                    <option value="MALFORMED_DATA_FLOOD">MALFORMED_FLOOD</option>
+                </select>
+                <label>
+                    <input type="checkbox" id="show-resolved"> Afficher résolues
+                </label>
+            </div>
+        </div>
+        <div id="alerts-container" class="alerts-container">
+            <p class="empty-msg">Aucune alerte pour le moment</p>
+        </div>
+        <div class="table-footer">
+            <span id="alerts-total-count">0 alerte(s)</span>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!--  TAB: IPS (Intrusion Prevention System)                           -->
+    <!-- ================================================================= -->
+    <section id="tab-ips" class="tab-content">
+        <!-- IPS Header avec toggle -->
+        <div class="ips-header">
+            <div class="ips-title-row">
+                <h3>🛡️ Système de Prévention d'Intrusions (IPS)</h3>
+                <div class="ips-controls">
+                    <label class="ips-toggle-label">
+                        <input type="checkbox" id="ips-toggle" checked>
+                        <span class="ips-toggle-text" id="ips-toggle-text">Activé</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- IPS Stats Cards -->
+        <div class="stats-grid ips-stats-grid">
+            <div class="stat-card ips-stat-card">
+                <div class="stat-icon">🚫</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="ips-active-blocks">0</span>
+                    <span class="stat-label">IPs bloquées</span>
+                </div>
+            </div>
+            <div class="stat-card ips-stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="ips-total-blocks">0</span>
+                    <span class="stat-label">Total blocages</span>
+                </div>
+            </div>
+            <div class="stat-card ips-stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="ips-total-unblocks">0</span>
+                    <span class="stat-label">Déblocages</span>
+                </div>
+            </div>
+            <div class="stat-card ips-stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-info">
+                    <span class="stat-value" id="ips-whitelist-size">0</span>
+                    <span class="stat-label">Whitelist</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- IPS Blocked IPs Table -->
+        <div class="panel">
+            <div class="panel-header">
+                <h3>🚫 IPs actuellement bloquées</h3>
+            </div>
+            <div class="table-container">
+                <table id="ips-blocked-table">
+                    <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>Raison</th>
+                            <th>Sévérité</th>
+                            <th>Type</th>
+                            <th>Agent</th>
+                            <th>Durée</th>
+                            <th>Expire</th>
+                            <th>Bloquée le</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ips-blocked-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- IPS History Table -->
+        <div class="panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3>📜 Historique IPS</h3>
+            </div>
+            <div class="table-container" style="max-height: 350px;">
+                <table id="ips-history-table">
+                    <thead>
+                        <tr>
+                            <th>IP</th>
+                            <th>Action</th>
+                            <th>Raison</th>
+                            <th>Sévérité</th>
+                            <th>Type</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ips-history-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Whitelist Section -->
+        <div class="panel" style="margin-top: 20px;">
+            <div class="panel-header">
+                <h3>✅ Whitelist (IPs protégées)</h3>
+                <div class="whitelist-add">
+                    <input type="text" id="whitelist-ip-input" placeholder="Ajouter une IP..." class="input-small">
+                    <button id="btn-add-whitelist" class="btn btn-small btn-success">+ Ajouter</button>
+                </div>
+            </div>
+            <div id="whitelist-container" class="whitelist-tags">
+                <span class="empty-msg">Chargement...</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!--  TAB: AGENTS                                                      -->
+    <!-- ================================================================= -->
+    <section id="tab-agents" class="tab-content">
+        <h3>Agents enregistrés <span id="agents-count" style="font-size:0.8em;color:var(--text-secondary);"></span></h3>
+        <div class="table-container">
+            <table id="agents-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Agent ID</th>
+                        <th>IP</th>
+                        <th>OS</th>
+                        <th>Première connexion</th>
+                        <th>Dernière activité</th>
+                    </tr>
+                </thead>
+                <tbody id="agents-table-body">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Monitoring système des agents -->
+        <h3 style="margin-top:2rem;">📊 Monitoring Système</h3>
+        <div id="agent-stats-container" class="agent-stats-grid">
+            <div class="empty-msg">En attente des données système des agents...</div>
+        </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!--  DETAIL PANEL (Slide-in from right)                               -->
+    <!-- ================================================================= -->
+    <div id="detail-overlay" class="detail-overlay hidden"></div>
+    <aside id="detail-panel" class="detail-panel hidden">
+        <div class="detail-panel-header">
+            <h3 id="detail-title">Détails</h3>
+            <button id="detail-close" class="btn btn-small" onclick="SOCDashboard.closeDetail()">✕</button>
+        </div>
+        <div id="detail-body" class="detail-panel-body">
+        </div>
+    </aside>
+
+    <!-- ================================================================= -->
+    <!--  TOAST NOTIFICATIONS                                              -->
+    <!-- ================================================================= -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ================================================================= -->
+    <!--  SCRIPTS                                                          -->
+    <!-- ================================================================= -->
+    <script src="js/websocket.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/alerts.js"></script>
+
+</body>
+</html>

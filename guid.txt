@@ -1,0 +1,7 @@
+cd "C:\Users\21626\Desktop\SSIR\ING-4\S-2\Projet_sécurité des architectures réseaux\dev une solution SIEM from 0\soc-system"
+>> python -m server.server 
+
+ cd "C:\Users\21626\Desktop\SSIR\ING-4\S-2\Projet_sécurité des architectures réseaux\dev une solution SIEM from 0\soc-system"
+>> python -m agent.agent
+
+start "C:\Users\21626\Desktop\SSIR\ING-4\S-2\Projet_sécurité des architectures réseaux\dev une solution SIEM from 0\soc-system\dashboard\index.html"

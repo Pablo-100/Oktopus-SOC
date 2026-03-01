@@ -1,0 +1,25 @@
+{
+    "server": {
+        "tcp_port": 9999,
+        "ws_port": 8765,
+        "db_path": "soc.db"
+    },
+    "detection": {
+        "brute_force_threshold": 5,
+        "brute_force_window_seconds": 60,
+        "suspicious_ports": [4444, 1337, 31337, 6666, 9001],
+        "ddos_syn_threshold": 50,
+        "ddos_conn_threshold": 30
+    },
+    "ips": {
+        "enabled": true,
+        "cooldown_seconds": 60,
+        "whitelist": []
+    },
+    "agent": {
+        "default_server": "127.0.0.1",
+        "default_port": 9999,
+        "collect_interval": 5,
+        "buffer_max": 1000
+    }
+}
