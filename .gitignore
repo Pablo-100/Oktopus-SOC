@@ -3,4 +3,8 @@ echo "*.db" >> .gitignore
 echo "__pycache__/" >> .gitignore
 echo "*.pyc" >> .gitignore
 echo "agent_id.txt" >> .gitignore
-echo "blocker.log" >> .gitignore
+echo "blocker.log" >> .gitignoresoc.db
+*.db
+__pycache__/
+*.pyc
+agent_id.txt
